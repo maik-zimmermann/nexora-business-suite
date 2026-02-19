@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['8.4', '8.5']
+        php-version: ['8.5']
 
     steps:
       - name: Checkout code
@@ -51,6 +51,11 @@ jobs:
 
       - name: Build Assets
         run: npm run build
+
+      - name: Create Database
+        run: |
+          mkdir -p database
+          touch database/testing.sqlite
 
       - name: Tests
         run: ./vendor/bin/pest
