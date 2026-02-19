@@ -52,5 +52,10 @@ jobs:
       - name: Build Assets
         run: npm run build
 
+      - name: Create Database
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+
       - name: Tests
         run: ./vendor/bin/pest
