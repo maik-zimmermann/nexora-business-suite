@@ -2,7 +2,9 @@
 
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequiresAdministrator;
 use App\Http\Middleware\RequiresTenant;
+use App\Http\Middleware\RequiresTenantMembership;
 use App\Http\Middleware\ResolveTenant;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -30,6 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant' => RequiresTenant::class,
+            'tenant.member' => RequiresTenantMembership::class,
+            'admin' => RequiresAdministrator::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

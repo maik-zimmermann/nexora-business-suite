@@ -3,9 +3,13 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -22,6 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'admin_role_id',
     ];
 
     /**
@@ -47,6 +52,88 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'admin_role_id' => 'integer',
         ];
+    }
+
+    /**
+     * Get the administration role assigned to this user.
+     */
+    public function adminRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'admin_role_id');
+    }
+
+    /**
+     * Get all tenant memberships for this user.
+     */
+    public function tenantMemberships(): HasMany
+    {
+        return $this->hasMany(TenantMembership::class);
+    }
+
+    /**
+     * Get the membership for a specific tenant.
+     */
+    public function membershipFor(Tenant $tenant): ?TenantMembership
+    {
+        return $this->tenantMemberships()->where('tenant_id', $tenant->id)->first();
+    }
+
+    /**
+     * Check if this user is a Nexora administrator.
+     */
+    public function isAdministrator(): bool
+    {
+        return $this->admin_role_id !== null;
+    }
+
+    /**
+     * Check if this user is a member of the given tenant.
+     */
+    public function isMemberOf(Tenant $tenant): bool
+    {
+        return $this->tenantMemberships()->where('tenant_id', $tenant->id)->exists();
+    }
+
+    /**
+     * Check if this user has a specific role in the given tenant.
+     */
+    public function hasTenantRole(Tenant $tenant, string $roleSlug): bool
+    {
+        return $this->tenantMemberships()
+            ->where('tenant_id', $tenant->id)
+            ->whereHas('role', fn ($query) => $query->where('slug', $roleSlug))
+            ->exists();
+    }
+
+    /**
+     * Get all permission slugs for the user in their current context.
+     *
+     * @return Collection<int, string>
+     */
+    public function allPermissions(?Tenant $tenant = null): Collection
+    {
+        if ($this->isAdministrator()) {
+            return $this->adminRole->permissions->pluck('slug');
+        }
+
+        $tenant ??= app(Tenancy::class)->get();
+
+        if ($tenant === null) {
+            return collect();
+        }
+
+        $membership = $this->membershipFor($tenant);
+
+        return $membership?->role->permissions->pluck('slug') ?? collect();
+    }
+
+    /**
+     * Check if the user has a permission in their current context.
+     */
+    public function hasPermissionTo(string $permissionSlug, ?Tenant $tenant = null): bool
+    {
+        return $this->allPermissions($tenant)->contains($permissionSlug);
     }
 }
