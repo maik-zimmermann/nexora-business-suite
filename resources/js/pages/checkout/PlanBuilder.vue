@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import AuthBase from '@/layouts/AuthLayout.vue';
 import { store } from '@/routes/checkout';
 
 interface Module {
@@ -56,7 +55,9 @@ function formatPrice(cents: number): string {
 }
 
 function modulePrice(module: Module): number {
-    return isAnnual.value ? module.annual_price_cents : module.monthly_price_cents;
+    return isAnnual.value
+        ? module.annual_price_cents
+        : module.monthly_price_cents;
 }
 
 const modulesTotal = computed(() => {
@@ -80,34 +81,54 @@ function submit() {
 
         <div class="mx-auto w-full max-w-5xl px-6 py-12">
             <div class="mb-10 text-center">
-                <h1 class="text-3xl font-bold tracking-tight">Build Your Plan</h1>
-                <p class="mt-2 text-muted-foreground">Select the modules you need and start your 14-day free trial.</p>
+                <h1 class="text-3xl font-bold tracking-tight">
+                    Build Your Plan
+                </h1>
+                <p class="mt-2 text-muted-foreground">
+                    Select the modules you need and start your 14-day free
+                    trial.
+                </p>
             </div>
 
             <div class="grid gap-10 lg:grid-cols-[1fr_320px]">
                 <div class="space-y-8">
                     <div>
-                        <h2 class="mb-4 text-lg font-semibold">Billing Interval</h2>
+                        <h2 class="mb-4 text-lg font-semibold">
+                            Billing Interval
+                        </h2>
                         <div class="flex gap-2">
                             <Button
-                                :variant="form.billing_interval === 'monthly' ? 'default' : 'outline'"
+                                :variant="
+                                    form.billing_interval === 'monthly'
+                                        ? 'default'
+                                        : 'outline'
+                                "
                                 @click="form.billing_interval = 'monthly'"
                             >
                                 Monthly
                             </Button>
                             <Button
-                                :variant="form.billing_interval === 'annual' ? 'default' : 'outline'"
+                                :variant="
+                                    form.billing_interval === 'annual'
+                                        ? 'default'
+                                        : 'outline'
+                                "
                                 @click="form.billing_interval = 'annual'"
                             >
                                 Annual
-                                <span class="ml-1 text-xs opacity-75">(Save ~17%)</span>
+                                <span class="ml-1 text-xs opacity-75"
+                                    >(Save ~17%)</span
+                                >
                             </Button>
                         </div>
                     </div>
 
                     <div>
                         <h2 class="mb-4 text-lg font-semibold">Modules</h2>
-                        <InputError :message="form.errors.module_slugs" class="mb-2" />
+                        <InputError
+                            :message="form.errors.module_slugs"
+                            class="mb-2"
+                        />
                         <div class="grid gap-3 sm:grid-cols-2">
                             <button
                                 v-for="module in modules"
@@ -126,13 +147,23 @@ function submit() {
                                     class="mt-0.5"
                                 />
                                 <div class="flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="font-medium">{{ module.name }}</span>
-                                        <span class="text-sm text-muted-foreground">
-                                            {{ formatPrice(modulePrice(module)) }}{{ billingLabel }}
+                                    <div
+                                        class="flex items-center justify-between"
+                                    >
+                                        <span class="font-medium">{{
+                                            module.name
+                                        }}</span>
+                                        <span
+                                            class="text-sm text-muted-foreground"
+                                        >
+                                            {{ formatPrice(modulePrice(module))
+                                            }}{{ billingLabel }}
                                         </span>
                                     </div>
-                                    <p v-if="module.description" class="mt-1 text-sm text-muted-foreground">
+                                    <p
+                                        v-if="module.description"
+                                        class="mt-1 text-sm text-muted-foreground"
+                                    >
                                         {{ module.description }}
                                     </p>
                                 </div>
@@ -142,7 +173,9 @@ function submit() {
 
                     <div class="grid gap-6 sm:grid-cols-2">
                         <div class="grid gap-2">
-                            <Label for="seat_limit">Seats (min {{ minimumSeats }})</Label>
+                            <Label for="seat_limit"
+                                >Seats (min {{ minimumSeats }})</Label
+                            >
                             <Input
                                 id="seat_limit"
                                 type="number"
@@ -184,27 +217,43 @@ function submit() {
                         <h3 class="mb-4 text-lg font-semibold">Summary</h3>
 
                         <div class="space-y-2 text-sm">
-                            <template v-for="module in modules" :key="module.slug">
+                            <template
+                                v-for="module in modules"
+                                :key="module.slug"
+                            >
                                 <div
                                     v-if="isModuleSelected(module.slug)"
                                     class="flex justify-between"
                                 >
                                     <span>{{ module.name }}</span>
-                                    <span>{{ formatPrice(modulePrice(module)) }}</span>
+                                    <span>{{
+                                        formatPrice(modulePrice(module))
+                                    }}</span>
                                 </div>
                             </template>
 
-                            <div v-if="form.module_slugs.length === 0" class="text-muted-foreground">
+                            <div
+                                v-if="form.module_slugs.length === 0"
+                                class="text-muted-foreground"
+                            >
                                 Select at least one module
                             </div>
                         </div>
 
                         <div class="mt-4 border-t pt-4">
                             <div class="flex items-baseline justify-between">
-                                <span class="text-sm text-muted-foreground">{{ form.seat_limit }} seat(s) included</span>
+                                <span class="text-sm text-muted-foreground"
+                                    >{{ form.seat_limit }} seat(s)
+                                    included</span
+                                >
                             </div>
                             <div class="flex items-baseline justify-between">
-                                <span class="text-sm text-muted-foreground">{{ form.usage_quota.toLocaleString() }} usage units</span>
+                                <span class="text-sm text-muted-foreground"
+                                    >{{
+                                        form.usage_quota.toLocaleString()
+                                    }}
+                                    usage units</span
+                                >
                             </div>
                         </div>
 
@@ -212,22 +261,32 @@ function submit() {
                             <div class="flex items-baseline justify-between">
                                 <span class="font-semibold">Total</span>
                                 <div class="text-right">
-                                    <span class="text-2xl font-bold">{{ formatPrice(total) }}</span>
-                                    <span class="text-sm text-muted-foreground">{{ billingLabel }}</span>
+                                    <span class="text-2xl font-bold">{{
+                                        formatPrice(total)
+                                    }}</span>
+                                    <span
+                                        class="text-sm text-muted-foreground"
+                                        >{{ billingLabel }}</span
+                                    >
                                 </div>
                             </div>
                         </div>
 
                         <Button
                             class="mt-6 w-full"
-                            :disabled="form.processing || form.module_slugs.length === 0"
+                            :disabled="
+                                form.processing ||
+                                form.module_slugs.length === 0
+                            "
                             @click="submit"
                         >
                             <Spinner v-if="form.processing" />
                             Start Free Trial
                         </Button>
 
-                        <p class="mt-3 text-center text-xs text-muted-foreground">
+                        <p
+                            class="mt-3 text-center text-xs text-muted-foreground"
+                        >
                             14-day free trial. Cancel anytime.
                         </p>
                     </div>
