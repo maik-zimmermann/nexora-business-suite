@@ -116,7 +116,7 @@ class StripeProductSync
         $price = $stripe->prices->create([
             'product' => $product->id,
             'unit_amount' => config('billing.usage_overage_cents'),
-            'currency' => 'usd',
+            'currency' => config('cashier.currency'),
             'recurring' => [
                 'interval' => 'month',
                 'usage_type' => 'metered',
@@ -187,7 +187,7 @@ class StripeProductSync
         $price = $stripe->prices->create([
             'product' => $productId,
             'unit_amount' => $unitAmount,
-            'currency' => 'usd',
+            'currency' => config('cashier.currency'),
             'recurring' => ['interval' => $interval],
         ]);
 
