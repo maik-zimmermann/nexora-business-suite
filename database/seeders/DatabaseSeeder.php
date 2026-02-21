@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
         $this->call(PermissionSeeder::class);
+        $this->call(ModuleSeeder::class);
         $this->call(TenantSeeder::class);
 
         $user = User::factory()->create([

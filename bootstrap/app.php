@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnforceSubscriptionStatus;
+use App\Http\Middleware\EnsureOnboardingEligible;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequiresAdministrator;
@@ -20,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+        ]);
+
         $middleware->web(prepend: [
             ResolveTenant::class,
         ]);
@@ -34,6 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => RequiresTenant::class,
             'tenant.member' => RequiresTenantMembership::class,
             'admin' => RequiresAdministrator::class,
+            'onboarding.eligible' => EnsureOnboardingEligible::class,
+            'subscription.status' => EnforceSubscriptionStatus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

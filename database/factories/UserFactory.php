@@ -58,6 +58,18 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user has no password and has not completed onboarding.
+     */
+    public function passwordless(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'password' => null,
+            'email_verified_at' => null,
+            'onboarding_completed_at' => null,
+        ]);
+    }
+
+    /**
      * Indicate that the model has two-factor authentication configured.
      */
     public function withTwoFactor(): static
