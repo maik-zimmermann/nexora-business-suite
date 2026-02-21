@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Tenancy;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,6 +43,29 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'subscription' => function () {
+                $tenant = app(Tenancy::class)->get();
+
+                if ($tenant === null) {
+                    return null;
+                }
+
+                $sub = $tenant->tenantSubscription;
+
+                if (! $sub) {
+                    return null;
+                }
+
+                return [
+                    'status' => $sub->status->value,
+                    'seat_limit' => $sub->seat_limit,
+                    'current_seat_count' => $tenant->currentSeatCount(),
+                    'usage_quota' => $sub->usage_quota,
+                    'current_usage' => $sub->currentUsage(),
+                    'current_period_end' => $sub->current_period_end?->toISOString(),
+                ];
+            },
+            'subscriptionReadOnly' => fn () => $request->attributes->get('subscription_read_only', false),
         ];
     }
 }

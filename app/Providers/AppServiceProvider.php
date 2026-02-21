@@ -2,14 +2,24 @@
 
 namespace App\Providers;
 
+use App\Events\TenantProvisioned;
+use App\Listeners\HandleStripeCheckoutCompleted;
+use App\Listeners\HandleStripeInvoicePaymentFailed;
+use App\Listeners\HandleStripeSubscriptionDeleted;
+use App\Listeners\HandleStripeSubscriptionUpdated;
+use App\Listeners\SendTenantActivationEmail;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Tenancy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Cashier\Cashier;
+use Laravel\Cashier\Events\WebhookReceived;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,8 +36,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Cashier::useCustomerModel(Tenant::class);
+
         $this->configureDefaults();
         $this->configureAuthorization();
+        $this->configureEventListeners();
     }
 
     /**
@@ -46,6 +59,18 @@ class AppServiceProvider extends ServiceProvider
 
             return null;
         });
+    }
+
+    /**
+     * Configure event listeners for Stripe webhooks and tenant provisioning.
+     */
+    protected function configureEventListeners(): void
+    {
+        Event::listen(WebhookReceived::class, HandleStripeCheckoutCompleted::class);
+        Event::listen(WebhookReceived::class, HandleStripeSubscriptionUpdated::class);
+        Event::listen(WebhookReceived::class, HandleStripeSubscriptionDeleted::class);
+        Event::listen(WebhookReceived::class, HandleStripeInvoicePaymentFailed::class);
+        Event::listen(TenantProvisioned::class, SendTenantActivationEmail::class);
     }
 
     /**

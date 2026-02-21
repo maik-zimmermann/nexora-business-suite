@@ -27,6 +27,8 @@ class User extends Authenticatable
         'email',
         'password',
         'admin_role_id',
+        'onboarding_completed_at',
+        'email_verified_at',
     ];
 
     /**
@@ -53,6 +55,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'admin_role_id' => 'integer',
+            'onboarding_completed_at' => 'datetime',
         ];
     }
 
@@ -135,5 +138,13 @@ class User extends Authenticatable
     public function hasPermissionTo(string $permissionSlug, ?Tenant $tenant = null): bool
     {
         return $this->allPermissions($tenant)->contains($permissionSlug);
+    }
+
+    /**
+     * Check if the user has completed onboarding.
+     */
+    public function hasCompletedOnboarding(): bool
+    {
+        return $this->onboarding_completed_at !== null;
     }
 }
