@@ -38,4 +38,15 @@ class ModuleFactory extends Factory
             'is_active' => false,
         ]);
     }
+
+    /**
+     * Indicate that the module has no Stripe prices yet (pre-sync state).
+     */
+    public function withoutStripePrices(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'stripe_monthly_price_id' => null,
+            'stripe_annual_price_id' => null,
+        ]);
+    }
 }

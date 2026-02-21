@@ -50,4 +50,20 @@ return [
 
     'usage_metered_price_id' => env('BILLING_USAGE_METERED_PRICE_ID'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Seat & Usage Overage Pricing (Cents)
+    |--------------------------------------------------------------------------
+    |
+    | Unit amounts used when auto-provisioning Stripe prices for seat overage
+    | and usage overage products.
+    |
+    */
+
+    'seat_monthly_cents' => (int) env('BILLING_SEAT_MONTHLY_CENTS', 1500),
+
+    'seat_annual_cents' => (int) env('BILLING_SEAT_ANNUAL_CENTS', 14400),
+
+    'usage_overage_cents' => (int) env('BILLING_USAGE_OVERAGE_CENTS', 10),
+
 ];

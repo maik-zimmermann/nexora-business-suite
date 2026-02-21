@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\BillingInterval;
+use App\Models\AppSetting;
 use App\Models\CheckoutSession;
 use App\Models\Module;
 use Laravel\Cashier\Cashier;
@@ -40,8 +41,8 @@ class CheckoutSessionBuilder
         }
 
         $seatPriceId = $billingInterval === BillingInterval::Annual
-            ? config('billing.seat_annual_price_id')
-            : config('billing.seat_monthly_price_id');
+            ? AppSetting::get('billing.seat_annual_price_id', config('billing.seat_annual_price_id'))
+            : AppSetting::get('billing.seat_monthly_price_id', config('billing.seat_monthly_price_id'));
 
         if ($seatPriceId) {
             $lineItems[] = [
