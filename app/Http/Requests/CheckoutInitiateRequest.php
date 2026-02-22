@@ -25,8 +25,6 @@ class CheckoutInitiateRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255'],
             'module_slugs' => ['required', 'array', 'min:1'],
             'module_slugs.*' => ['string', Rule::exists('modules', 'slug')->where('is_active', true)],
-            'seat_limit' => ['required', 'integer', 'min:'.config('billing.min_seats')],
-            'usage_quota' => ['required', 'integer', 'min:1'],
             'billing_interval' => ['required', Rule::enum(BillingInterval::class)],
         ];
     }

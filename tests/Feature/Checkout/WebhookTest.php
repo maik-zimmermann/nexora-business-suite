@@ -118,7 +118,7 @@ test('subscription updated webhook syncs status', function () {
         ],
     ];
 
-    $listener = new HandleStripeSubscriptionUpdated;
+    $listener = app(HandleStripeSubscriptionUpdated::class);
     $listener->handle(new WebhookReceived($payload));
 
     $subscription->refresh();

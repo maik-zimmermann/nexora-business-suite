@@ -18,10 +18,11 @@ class CheckoutSessionBuilder
     public function build(
         string $email,
         array $moduleSlugs,
-        int $seatLimit,
-        int $usageQuota,
         BillingInterval $billingInterval,
     ): string {
+        $seatLimit = (int) config('billing.min_seats');
+        $usageQuota = (int) config('billing.usage_included_quota');
+
         $modules = Module::query()
             ->where('is_active', true)
             ->whereIn('slug', $moduleSlugs)
@@ -40,19 +41,22 @@ class CheckoutSessionBuilder
             ];
         }
 
-        $extraSeats = max(0, $seatLimit - (int) config('billing.min_seats'));
+        $seatPriceId = $billingInterval === BillingInterval::Annual
+            ? AppSetting::get('billing.seat_annual_price_id', config('billing.seat_annual_price_id'))
+            : AppSetting::get('billing.seat_monthly_price_id', config('billing.seat_monthly_price_id'));
 
-        if ($extraSeats > 0) {
-            $seatPriceId = $billingInterval === BillingInterval::Annual
-                ? AppSetting::get('billing.seat_annual_price_id', config('billing.seat_annual_price_id'))
-                : AppSetting::get('billing.seat_monthly_price_id', config('billing.seat_monthly_price_id'));
+        if ($seatPriceId) {
+            $lineItems[] = [
+                'price' => $seatPriceId,
+            ];
+        }
 
-            if ($seatPriceId) {
-                $lineItems[] = [
-                    'price' => $seatPriceId,
-                    'quantity' => $extraSeats,
-                ];
-            }
+        $usagePriceId = AppSetting::get('billing.usage_metered_price_id', config('billing.usage_metered_price_id'));
+
+        if ($usagePriceId) {
+            $lineItems[] = [
+                'price' => $usagePriceId,
+            ];
         }
 
         $sessionParams = [

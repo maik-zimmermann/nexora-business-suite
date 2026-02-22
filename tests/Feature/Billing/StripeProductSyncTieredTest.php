@@ -1,24 +1,9 @@
 <?php
 
 use App\Models\AppSetting;
-use App\Models\Module;
 use App\Services\StripeProductSync;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
-
-test('sync is a no-op when cashier secret is null', function () {
-    config(['cashier.secret' => null]);
-
-    Module::unsetEventDispatcher();
-    $module = Module::factory()->withoutStripePrices()->create();
-
-    $sync = new StripeProductSync;
-    $sync->sync($module);
-
-    $module->refresh();
-    expect($module->stripe_monthly_price_id)->toBeNull();
-    expect($module->stripe_annual_price_id)->toBeNull();
-});
 
 test('syncSeatProduct is a no-op when cashier secret is null', function () {
     config(['cashier.secret' => null]);

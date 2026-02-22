@@ -22,10 +22,12 @@ class CheckoutController extends Controller
                 ->where('is_active', true)
                 ->orderBy('sort_order')
                 ->get(),
-            'minimumSeats' => config('billing.min_seats'),
             'billingIntervals' => array_column(BillingInterval::cases(), 'value'),
-            'seatMonthlyCents' => config('billing.seat_monthly_cents'),
-            'seatAnnualCents' => config('billing.seat_annual_cents'),
+            'minSeats' => config('billing.min_seats'),
+            'seatOverageMonthlyCents' => config('billing.seat_monthly_cents'),
+            'seatOverageAnnualCents' => config('billing.seat_annual_cents'),
+            'usageIncludedQuota' => config('billing.usage_included_quota'),
+            'usageOverageCents' => config('billing.usage_overage_cents'),
         ]);
     }
 
@@ -39,8 +41,6 @@ class CheckoutController extends Controller
         $url = $builder->build(
             email: $validated['email'],
             moduleSlugs: $validated['module_slugs'],
-            seatLimit: $validated['seat_limit'],
-            usageQuota: $validated['usage_quota'],
             billingInterval: BillingInterval::from($validated['billing_interval']),
         );
 
