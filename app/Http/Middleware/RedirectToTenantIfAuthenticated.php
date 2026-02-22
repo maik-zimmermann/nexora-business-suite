@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Support\Tenancy;
 use Closure;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class RedirectToTenantIfAuthenticated
@@ -32,9 +33,9 @@ class RedirectToTenantIfAuthenticated
         }
 
         if ($activeTenants->count() === 1) {
-            return redirect(Tenancy::tenantUrl($activeTenants->first()->tenant, '/dashboard'));
+            return Inertia::location(Tenancy::tenantUrl($activeTenants->first()->tenant, '/dashboard'));
         }
 
-        return redirect()->route('tenants.show');
+        return Inertia::location(route('tenants.show'));
     }
 }

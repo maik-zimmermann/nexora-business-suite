@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use Inertia\Inertia;
 use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -16,6 +17,6 @@ class LogoutResponse implements LogoutResponseContract
             return response()->noContent();
         }
 
-        return redirect(rtrim(config('app.url'), '/').'/login');
+        return Inertia::location(rtrim(config('app.url'), '/').'/login');
     }
 }

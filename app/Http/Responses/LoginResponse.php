@@ -4,6 +4,7 @@ namespace App\Http\Responses;
 
 use App\Support\Tenancy;
 use Illuminate\Http\JsonResponse;
+use Inertia\Inertia;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,7 +33,7 @@ class LoginResponse implements LoginResponseContract
             ->get();
 
         if ($activeTenants->count() === 1) {
-            return redirect()->intended(
+            return Inertia::location(
                 Tenancy::tenantUrl($activeTenants->first()->tenant, '/dashboard')
             );
         }

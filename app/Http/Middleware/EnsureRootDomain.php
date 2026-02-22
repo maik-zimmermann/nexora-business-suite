@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Support\Tenancy;
 use Closure;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureRootDomain
@@ -17,7 +18,7 @@ class EnsureRootDomain
     public function handle(Request $request, Closure $next): Response
     {
         if (app(Tenancy::class)->hasTenant()) {
-            return redirect(rtrim(config('app.url'), '/').$request->getRequestUri());
+            return Inertia::location(rtrim(config('app.url'), '/').$request->getRequestUri());
         }
 
         return $next($request);
