@@ -2,8 +2,10 @@
 
 use App\Http\Middleware\EnforceSubscriptionStatus;
 use App\Http\Middleware\EnsureOnboardingEligible;
+use App\Http\Middleware\EnsureRootDomain;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RedirectToTenantIfAuthenticated;
 use App\Http\Middleware\RequiresAdministrator;
 use App\Http\Middleware\RequiresTenant;
 use App\Http\Middleware\RequiresTenantMembership;
@@ -39,6 +41,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => RequiresTenant::class,
             'tenant.member' => RequiresTenantMembership::class,
+            'tenant.redirect' => RedirectToTenantIfAuthenticated::class,
+            'root.domain' => EnsureRootDomain::class,
             'admin' => RequiresAdministrator::class,
             'onboarding.eligible' => EnsureOnboardingEligible::class,
             'subscription.status' => EnforceSubscriptionStatus::class,

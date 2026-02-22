@@ -36,8 +36,16 @@ watch(
     },
 );
 
+const baseDomain = computed(() => {
+    try {
+        return new URL(window.location.origin).hostname;
+    } catch {
+        return 'nexora.app';
+    }
+});
+
 const subdomainPreview = computed(() => {
-    return form.slug ? `${form.slug}.nexora.io` : 'your-org.nexora.io';
+    return form.slug ? `${form.slug}.${baseDomain.value}` : `your-org.${baseDomain.value}`;
 });
 
 function submit() {

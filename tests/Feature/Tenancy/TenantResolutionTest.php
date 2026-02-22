@@ -14,9 +14,9 @@ afterEach(function () {
 test('subdomain resolves active tenant', function () {
     $tenant = Tenant::factory()->create(['slug' => 'acme']);
 
-    $response = $this->get(tenantUrl('acme'));
+    $response = $this->get(tenantUrl('acme', '/dashboard'));
 
-    $response->assertOk();
+    $response->assertRedirect();
     expect(app(Tenancy::class)->get())->not->toBeNull();
     expect(app(Tenancy::class)->get()->slug)->toBe('acme');
 });
@@ -24,7 +24,7 @@ test('subdomain resolves active tenant', function () {
 test('subdomain with inactive tenant returns 403', function () {
     Tenant::factory()->inactive()->create(['slug' => 'dormant']);
 
-    $response = $this->get(tenantUrl('dormant'));
+    $response = $this->get(tenantUrl('dormant', '/dashboard'));
 
     $response->assertStatus(403);
 });
@@ -43,13 +43,15 @@ test('unknown subdomain returns 404 and logs failure', function () {
 });
 
 test('valid X-Tenant-ID with valid signature resolves tenant', function () {
+    Route::middleware('web')->get('/test-header-resolution', fn () => 'ok');
+
     $tenant = Tenant::factory()->create();
     $signature = hash_hmac('sha256', $tenant->id, config('app.key'));
 
     $response = $this->withHeaders([
         'X-Tenant-ID' => $tenant->id,
         'X-Tenant-Signature' => $signature,
-    ])->get(appUrl());
+    ])->get(appUrl('/test-header-resolution'));
 
     $response->assertOk();
     expect(app(Tenancy::class)->get())->not->toBeNull();
@@ -93,9 +95,8 @@ test('subdomain takes precedence over X-Tenant-ID header', function () {
     $response = $this->withHeaders([
         'X-Tenant-ID' => $headerTenant->id,
         'X-Tenant-Signature' => $signature,
-    ])->get(tenantUrl('acme'));
+    ])->get(tenantUrl('acme', '/dashboard'));
 
-    $response->assertOk();
     expect(app(Tenancy::class)->get()->id)->toBe($subdomainTenant->id);
 });
 

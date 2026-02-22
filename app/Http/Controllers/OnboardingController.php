@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\OnboardingRequest;
 use App\Models\User;
+use App\Support\Tenancy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -49,6 +50,10 @@ class OnboardingController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('dashboard');
+        if ($tenant) {
+            return redirect(Tenancy::tenantUrl($tenant, '/dashboard'));
+        }
+
+        return redirect('/');
     }
 }
