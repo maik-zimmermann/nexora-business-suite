@@ -68,6 +68,13 @@ class StripeProductSync
             'Per-seat graduated tiered charge for team members.',
         );
 
+        $meter = $this->findOrCreateMeter(
+            $stripe,
+            'billing.seat_meter_id',
+            'Nexora Seat Overage',
+            'nexora_seat_overage',
+        );
+
         $freeUpTo = (int) config('billing.min_seats');
 
         $monthlyPriceId = $this->syncTieredMeteredPrice(
@@ -77,6 +84,7 @@ class StripeProductSync
             $freeUpTo,
             config('billing.seat_monthly_cents'),
             'month',
+            $meter->id,
         );
 
         $annualPriceId = $this->syncTieredMeteredPrice(
@@ -86,10 +94,12 @@ class StripeProductSync
             $freeUpTo,
             config('billing.seat_annual_cents'),
             'year',
+            $meter->id,
         );
 
         AppSetting::set('billing.seat_monthly_price_id', $monthlyPriceId);
         AppSetting::set('billing.seat_annual_price_id', $annualPriceId);
+        AppSetting::set('billing.seat_meter_id', $meter->id);
     }
 
     /**
@@ -110,7 +120,12 @@ class StripeProductSync
             'Metered usage overage charge.',
         );
 
-        $meter = $this->findOrCreateMeter($stripe);
+        $meter = $this->findOrCreateMeter(
+            $stripe,
+            'billing.usage_meter_id',
+            'Nexora Usage Overage',
+            'nexora_usage_overage',
+        );
 
         $freeUpTo = (int) config('billing.usage_included_quota');
 
@@ -129,11 +144,15 @@ class StripeProductSync
     }
 
     /**
-     * Find or create a Stripe Billing Meter for usage overage tracking.
+     * Find or create a Stripe Billing Meter.
      */
-    private function findOrCreateMeter(StripeClient $stripe): \Stripe\Billing\Meter
-    {
-        $existingMeterId = AppSetting::get('billing.usage_meter_id');
+    private function findOrCreateMeter(
+        StripeClient $stripe,
+        string $settingKey,
+        string $displayName,
+        string $eventName,
+    ): \Stripe\Billing\Meter {
+        $existingMeterId = AppSetting::get($settingKey);
 
         if ($existingMeterId) {
             return $stripe->billing->meters->retrieve($existingMeterId);
@@ -142,14 +161,14 @@ class StripeProductSync
         $meters = $stripe->billing->meters->all(['limit' => 100]);
 
         foreach ($meters->data as $meter) {
-            if ($meter->event_name === 'nexora_usage_overage') {
+            if ($meter->event_name === $eventName) {
                 return $meter;
             }
         }
 
         return $stripe->billing->meters->create([
-            'display_name' => 'Nexora Usage Overage',
-            'event_name' => 'nexora_usage_overage',
+            'display_name' => $displayName,
+            'event_name' => $eventName,
             'default_aggregation' => ['formula' => 'sum'],
             'customer_mapping' => [
                 'type' => 'by_id',
@@ -234,7 +253,7 @@ class StripeProductSync
         int $freeUpTo,
         int $overageAmountCents,
         string $interval,
-        ?string $meterId = null,
+        string $meterId,
     ): string {
         if ($existingPriceId) {
             try {
@@ -253,11 +272,8 @@ class StripeProductSync
         $recurring = [
             'interval' => $interval,
             'usage_type' => 'metered',
+            'meter' => $meterId,
         ];
-
-        if ($meterId) {
-            $recurring['meter'] = $meterId;
-        }
 
         $price = $stripe->prices->create([
             'product' => $productId,
