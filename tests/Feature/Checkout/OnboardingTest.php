@@ -4,6 +4,7 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
+use App\Support\Tenancy;
 use Illuminate\Support\Facades\URL;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
@@ -45,14 +46,20 @@ test('unsigned url without authentication returns 403', function () {
     $response->assertStatus(403);
 });
 
-test('already onboarded user is redirected to dashboard', function () {
+test('already onboarded user with tenant is redirected to tenant dashboard', function () {
     $user = User::factory()->create(['onboarding_completed_at' => now()]);
+    $tenant = Tenant::factory()->create(['slug' => 'acme']);
+    TenantMembership::create([
+        'user_id' => $user->id,
+        'tenant_id' => $tenant->id,
+        'role_id' => Role::where('slug', 'owner')->first()->id,
+    ]);
 
     $url = URL::temporarySignedRoute('onboarding.show', now()->addDays(7), ['user' => $user->id]);
 
     $response = $this->get($url);
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(Tenancy::tenantUrl($tenant, '/dashboard'));
 });
 
 test('completing onboarding updates user and tenant', function () {
@@ -75,7 +82,7 @@ test('completing onboarding updates user and tenant', function () {
     ]);
 
     $response->assertSessionHasNoErrors();
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(Tenancy::tenantUrl($tenant->fresh(), '/dashboard'));
 
     $user->refresh();
     expect($user->name)->toBe('John Doe');

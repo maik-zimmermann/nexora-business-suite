@@ -43,6 +43,24 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'tenant' => function () {
+                $tenant = app(Tenancy::class)->get();
+
+                if ($tenant === null) {
+                    return null;
+                }
+
+                $parsed = parse_url(config('app.url'));
+                $scheme = $parsed['scheme'] ?? 'https';
+                $host = $parsed['host'] ?? 'localhost';
+                $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+
+                return [
+                    'slug' => $tenant->slug,
+                    'name' => $tenant->name,
+                    'baseUrl' => "{$scheme}://{$tenant->slug}.{$host}{$port}",
+                ];
+            },
             'subscription' => function () {
                 $tenant = app(Tenancy::class)->get();
 

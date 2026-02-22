@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -16,11 +17,14 @@ defineProps<{
     status?: string;
     canResetPassword: boolean;
 }>();
+
+const page = usePage();
+const tenant = computed(() => page.props.tenant);
 </script>
 
 <template>
     <AuthBase
-        title="Log in to your account"
+        :title="tenant ? `Log in to ${tenant.name}` : 'Log in to your account'"
         description="Enter your email and password below to log in"
     >
         <Head title="Log in" />

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Tenancy;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +29,13 @@ class EnsureOnboardingEligible
         $user = Auth::user();
 
         if ($user && $user->hasCompletedOnboarding()) {
-            return redirect()->route('dashboard');
+            $tenant = $user->tenantMemberships()->first()?->tenant;
+
+            if ($tenant) {
+                return redirect(Tenancy::tenantUrl($tenant, '/dashboard'));
+            }
+
+            return redirect('/');
         }
 
         return $next($request);

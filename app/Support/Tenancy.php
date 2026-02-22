@@ -6,6 +6,19 @@ use App\Models\Tenant;
 
 class Tenancy
 {
+    /**
+     * Build an absolute URL on the given tenant's subdomain.
+     */
+    public static function tenantUrl(Tenant $tenant, string $path = '/'): string
+    {
+        $parsed = parse_url(config('app.url'));
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'] ?? 'localhost';
+        $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+
+        return "{$scheme}://{$tenant->slug}.{$host}{$port}{$path}";
+    }
+
     private ?Tenant $tenant = null;
 
     /**
