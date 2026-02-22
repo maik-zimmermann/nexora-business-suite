@@ -23,8 +23,7 @@ class StripeProductSync
 
         $product = $this->findOrCreateProduct(
             $stripe,
-            'module_slug',
-            $module->slug,
+            "nexora_module_{$module->slug}",
             $module->name,
             $module->description,
         );
@@ -64,8 +63,7 @@ class StripeProductSync
 
         $product = $this->findOrCreateProduct(
             $stripe,
-            'nexora_product',
-            'seat',
+            'nexora_seat',
             'Additional Seat',
             'Per-seat overage charge for additional team members.',
         );
@@ -107,11 +105,12 @@ class StripeProductSync
 
         $product = $this->findOrCreateProduct(
             $stripe,
-            'nexora_product',
-            'usage',
+            'nexora_usage',
             'Usage Overage',
             'Metered usage overage charge.',
         );
+
+        $meter = $this->findOrCreateMeter($stripe);
 
         $price = $stripe->prices->create([
             'product' => $product->id,
@@ -120,43 +119,73 @@ class StripeProductSync
             'recurring' => [
                 'interval' => 'month',
                 'usage_type' => 'metered',
-                'aggregate_usage' => 'sum',
+                'meter' => $meter->id,
             ],
         ]);
 
         AppSetting::set('billing.usage_metered_price_id', $price->id);
+        AppSetting::set('billing.usage_meter_id', $meter->id);
     }
 
     /**
-     * Find an existing Stripe product by metadata or create a new one.
+     * Find or create a Stripe Billing Meter for usage overage tracking.
+     */
+    private function findOrCreateMeter(StripeClient $stripe): \Stripe\Billing\Meter
+    {
+        $existingMeterId = AppSetting::get('billing.usage_meter_id');
+
+        if ($existingMeterId) {
+            return $stripe->billing->meters->retrieve($existingMeterId);
+        }
+
+        $meters = $stripe->billing->meters->all(['limit' => 100]);
+
+        foreach ($meters->data as $meter) {
+            if ($meter->event_name === 'nexora_usage_overage') {
+                return $meter;
+            }
+        }
+
+        return $stripe->billing->meters->create([
+            'display_name' => 'Nexora Usage Overage',
+            'event_name' => 'nexora_usage_overage',
+            'default_aggregation' => ['formula' => 'sum'],
+            'customer_mapping' => [
+                'type' => 'by_id',
+                'event_payload_key' => 'stripe_customer_id',
+            ],
+        ]);
+    }
+
+    /**
+     * Find an existing Stripe product by ID or create a new one.
+     *
+     * Uses deterministic product IDs to avoid Stripe Search API eventual consistency issues.
      */
     private function findOrCreateProduct(
         StripeClient $stripe,
-        string $metadataKey,
-        string $metadataValue,
+        string $productId,
         string $name,
         ?string $description,
     ): \Stripe\Product {
-        $results = $stripe->products->search([
-            'query' => "metadata['{$metadataKey}']:'{$metadataValue}'",
-        ]);
-
-        if ($results->data) {
-            $product = $results->data[0];
+        try {
+            $product = $stripe->products->retrieve($productId);
 
             if ($product->name !== $name) {
-                $product = $stripe->products->update($product->id, [
+                $product = $stripe->products->update($productId, [
                     'name' => $name,
                 ]);
             }
 
             return $product;
+        } catch (InvalidRequestException) {
+            // Product does not exist yet — create it.
         }
 
         return $stripe->products->create([
+            'id' => $productId,
             'name' => $name,
             'description' => $description,
-            'metadata' => [$metadataKey => $metadataValue],
         ]);
     }
 

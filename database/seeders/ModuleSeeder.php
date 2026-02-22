@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Module;
-use App\Services\StripeProductSync;
 use Illuminate\Database\Seeder;
 
 class ModuleSeeder extends Seeder
@@ -56,15 +55,11 @@ class ModuleSeeder extends Seeder
             ],
         ];
 
-        $sync = app(StripeProductSync::class);
-
         foreach ($modules as $moduleData) {
-            $module = Module::query()->updateOrCreate(
+            Module::query()->updateOrCreate(
                 ['slug' => $moduleData['slug']],
                 $moduleData,
             );
-
-            $sync->sync($module);
         }
     }
 }
