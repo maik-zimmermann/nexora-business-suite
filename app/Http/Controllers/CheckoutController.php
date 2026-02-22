@@ -6,9 +6,9 @@ use App\Enums\BillingInterval;
 use App\Http\Requests\CheckoutInitiateRequest;
 use App\Models\Module;
 use App\Services\CheckoutSessionBuilder;
-use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class CheckoutController extends Controller
 {
@@ -24,13 +24,15 @@ class CheckoutController extends Controller
                 ->get(),
             'minimumSeats' => config('billing.min_seats'),
             'billingIntervals' => array_column(BillingInterval::cases(), 'value'),
+            'seatMonthlyCents' => config('billing.seat_monthly_cents'),
+            'seatAnnualCents' => config('billing.seat_annual_cents'),
         ]);
     }
 
     /**
      * Create a Stripe Checkout session and redirect.
      */
-    public function store(CheckoutInitiateRequest $request, CheckoutSessionBuilder $builder): RedirectResponse
+    public function store(CheckoutInitiateRequest $request, CheckoutSessionBuilder $builder): SymfonyResponse
     {
         $validated = $request->validated();
 
@@ -42,7 +44,7 @@ class CheckoutController extends Controller
             billingInterval: BillingInterval::from($validated['billing_interval']),
         );
 
-        return redirect()->away($url);
+        return Inertia::location($url);
     }
 
     /**

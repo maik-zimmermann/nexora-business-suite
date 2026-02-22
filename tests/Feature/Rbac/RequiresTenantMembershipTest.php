@@ -22,7 +22,7 @@ test('non-member user gets 403', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get('http://acme.localhost/test-member-route')
+        ->get(tenantUrl('acme', '/test-member-route'))
         ->assertForbidden();
 });
 
@@ -38,13 +38,13 @@ test('tenant member passes through', function () {
     ]);
 
     $this->actingAs($user)
-        ->get('http://acme.localhost/test-member-route')
+        ->get(tenantUrl('acme', '/test-member-route'))
         ->assertSuccessful();
 });
 
 test('unauthenticated request gets 403', function () {
     Tenant::factory()->create(['slug' => 'acme']);
 
-    $this->get('http://acme.localhost/test-member-route')
+    $this->get(tenantUrl('acme', '/test-member-route'))
         ->assertForbidden();
 });

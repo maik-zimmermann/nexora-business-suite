@@ -14,7 +14,7 @@ afterEach(function () {
 test('subdomain resolves active tenant', function () {
     $tenant = Tenant::factory()->create(['slug' => 'acme']);
 
-    $response = $this->get('http://acme.localhost/');
+    $response = $this->get(tenantUrl('acme'));
 
     $response->assertOk();
     expect(app(Tenancy::class)->get())->not->toBeNull();
@@ -24,7 +24,7 @@ test('subdomain resolves active tenant', function () {
 test('subdomain with inactive tenant returns 403', function () {
     Tenant::factory()->inactive()->create(['slug' => 'dormant']);
 
-    $response = $this->get('http://dormant.localhost/');
+    $response = $this->get(tenantUrl('dormant'));
 
     $response->assertStatus(403);
 });
@@ -37,7 +37,7 @@ test('unknown subdomain returns 404 and logs failure', function () {
             && $context['slug'] === 'unknown'
         );
 
-    $response = $this->get('http://unknown.localhost/');
+    $response = $this->get(tenantUrl('unknown'));
 
     $response->assertStatus(404);
 });
@@ -49,7 +49,7 @@ test('valid X-Tenant-ID with valid signature resolves tenant', function () {
     $response = $this->withHeaders([
         'X-Tenant-ID' => $tenant->id,
         'X-Tenant-Signature' => $signature,
-    ])->get('http://localhost/');
+    ])->get(appUrl());
 
     $response->assertOk();
     expect(app(Tenancy::class)->get())->not->toBeNull();
@@ -66,7 +66,7 @@ test('valid X-Tenant-ID with invalid signature returns 403', function () {
     $response = $this->withHeaders([
         'X-Tenant-ID' => $tenant->id,
         'X-Tenant-Signature' => 'invalid-signature',
-    ])->get('http://localhost/');
+    ])->get(appUrl());
 
     $response->assertStatus(403);
 });
@@ -80,7 +80,7 @@ test('valid X-Tenant-ID with missing signature returns 403', function () {
 
     $response = $this->withHeaders([
         'X-Tenant-ID' => $tenant->id,
-    ])->get('http://localhost/');
+    ])->get(appUrl());
 
     $response->assertStatus(403);
 });
@@ -93,14 +93,14 @@ test('subdomain takes precedence over X-Tenant-ID header', function () {
     $response = $this->withHeaders([
         'X-Tenant-ID' => $headerTenant->id,
         'X-Tenant-Signature' => $signature,
-    ])->get('http://acme.localhost/');
+    ])->get(tenantUrl('acme'));
 
     $response->assertOk();
     expect(app(Tenancy::class)->get()->id)->toBe($subdomainTenant->id);
 });
 
 test('no subdomain and no header passes through without tenant', function () {
-    $response = $this->get('http://localhost/');
+    $response = $this->get(appUrl());
 
     $response->assertOk();
     expect(app(Tenancy::class)->hasTenant())->toBeFalse();
@@ -109,7 +109,7 @@ test('no subdomain and no header passes through without tenant', function () {
 test('RequiresTenant middleware aborts 404 when no tenant set', function () {
     Route::middleware(['web', 'tenant'])->get('/test-tenant-required', fn () => 'ok');
 
-    $response = $this->get('http://localhost/test-tenant-required');
+    $response = $this->get(appUrl('/test-tenant-required'));
 
     $response->assertStatus(404);
 });
@@ -119,7 +119,7 @@ test('RequiresTenant middleware passes when tenant is set', function () {
 
     $tenant = Tenant::factory()->create(['slug' => 'acme']);
 
-    $response = $this->get('http://acme.localhost/test-tenant-required');
+    $response = $this->get(tenantUrl('acme', '/test-tenant-required'));
 
     $response->assertOk();
     expect($response->getContent())->toBe('ok');

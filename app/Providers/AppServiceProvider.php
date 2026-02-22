@@ -8,8 +8,10 @@ use App\Listeners\HandleStripeInvoicePaymentFailed;
 use App\Listeners\HandleStripeSubscriptionDeleted;
 use App\Listeners\HandleStripeSubscriptionUpdated;
 use App\Listeners\SendTenantActivationEmail;
+use App\Models\Module;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Observers\ModuleObserver;
 use App\Support\Tenancy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureAuthorization();
         $this->configureEventListeners();
+        $this->configureObservers();
     }
 
     /**
@@ -71,6 +74,14 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(WebhookReceived::class, HandleStripeSubscriptionDeleted::class);
         Event::listen(WebhookReceived::class, HandleStripeInvoicePaymentFailed::class);
         Event::listen(TenantProvisioned::class, SendTenantActivationEmail::class);
+    }
+
+    /**
+     * Configure model observers.
+     */
+    protected function configureObservers(): void
+    {
+        Module::observe(ModuleObserver::class);
     }
 
     /**

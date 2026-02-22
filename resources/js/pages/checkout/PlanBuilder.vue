@@ -22,6 +22,8 @@ const props = defineProps<{
     modules: Module[];
     minimumSeats: number;
     billingIntervals: string[];
+    seatMonthlyCents: number;
+    seatAnnualCents: number;
 }>();
 
 const form = useForm({
@@ -48,9 +50,9 @@ function isModuleSelected(slug: string): boolean {
 }
 
 function formatPrice(cents: number): string {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('de-DE', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'EUR',
     }).format(cents / 100);
 }
 
@@ -66,7 +68,15 @@ const modulesTotal = computed(() => {
         .reduce((sum, m) => sum + modulePrice(m), 0);
 });
 
-const total = computed(() => modulesTotal.value);
+const extraSeats = computed(() => Math.max(0, form.seat_limit - props.minimumSeats));
+
+const seatPriceCents = computed(() =>
+    isAnnual.value ? props.seatAnnualCents : props.seatMonthlyCents,
+);
+
+const seatsTotal = computed(() => extraSeats.value * seatPriceCents.value);
+
+const total = computed(() => modulesTotal.value + seatsTotal.value);
 
 const billingLabel = computed(() => (isAnnual.value ? '/year' : '/month'));
 
@@ -174,7 +184,7 @@ function submit() {
                     <div class="grid gap-6 sm:grid-cols-2">
                         <div class="grid gap-2">
                             <Label for="seat_limit"
-                                >Seats (min {{ minimumSeats }})</Label
+                                >Seats ({{ minimumSeats }} included free)</Label
                             >
                             <Input
                                 id="seat_limit"
@@ -242,10 +252,23 @@ function submit() {
 
                         <div class="mt-4 border-t pt-4">
                             <div class="flex items-baseline justify-between">
-                                <span class="text-sm text-muted-foreground"
-                                    >{{ form.seat_limit }} seat(s)
-                                    included</span
+                                <span class="text-sm text-muted-foreground">
+                                    {{ minimumSeats }} seat(s) included
+                                </span>
+                            </div>
+                            <div
+                                v-if="extraSeats > 0"
+                                class="flex justify-between text-sm"
+                            >
+                                <span
+                                    >{{ extraSeats }} extra seat(s) &times;
+                                    {{
+                                        formatPrice(seatPriceCents)
+                                    }}</span
                                 >
+                                <span>{{
+                                    formatPrice(seatsTotal)
+                                }}</span>
                             </div>
                             <div class="flex items-baseline justify-between">
                                 <span class="text-sm text-muted-foreground"
