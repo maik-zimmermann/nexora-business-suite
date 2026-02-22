@@ -40,15 +40,19 @@ class CheckoutSessionBuilder
             ];
         }
 
-        $seatPriceId = $billingInterval === BillingInterval::Annual
-            ? AppSetting::get('billing.seat_annual_price_id', config('billing.seat_annual_price_id'))
-            : AppSetting::get('billing.seat_monthly_price_id', config('billing.seat_monthly_price_id'));
+        $extraSeats = max(0, $seatLimit - (int) config('billing.min_seats'));
 
-        if ($seatPriceId) {
-            $lineItems[] = [
-                'price' => $seatPriceId,
-                'quantity' => $seatLimit,
-            ];
+        if ($extraSeats > 0) {
+            $seatPriceId = $billingInterval === BillingInterval::Annual
+                ? AppSetting::get('billing.seat_annual_price_id', config('billing.seat_annual_price_id'))
+                : AppSetting::get('billing.seat_monthly_price_id', config('billing.seat_monthly_price_id'));
+
+            if ($seatPriceId) {
+                $lineItems[] = [
+                    'price' => $seatPriceId,
+                    'quantity' => $extraSeats,
+                ];
+            }
         }
 
         $sessionParams = [
