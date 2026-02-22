@@ -10,8 +10,10 @@ use App\Listeners\HandleStripeSubscriptionUpdated;
 use App\Listeners\SendTenantActivationEmail;
 use App\Models\Module;
 use App\Models\Tenant;
+use App\Models\TenantMembership;
 use App\Models\User;
 use App\Observers\ModuleObserver;
+use App\Observers\TenantMembershipObserver;
 use App\Support\Tenancy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -82,6 +84,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureObservers(): void
     {
         Module::observe(ModuleObserver::class);
+        TenantMembership::observe(TenantMembershipObserver::class);
     }
 
     /**

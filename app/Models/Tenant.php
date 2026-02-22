@@ -85,6 +85,14 @@ class Tenant extends Model
     }
 
     /**
+     * Get all seat snapshots for this tenant.
+     */
+    public function seatSnapshots(): HasMany
+    {
+        return $this->hasMany(SeatSnapshot::class);
+    }
+
+    /**
      * Get the current number of seats in use.
      */
     public function currentSeatCount(): int

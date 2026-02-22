@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\UsageType;
+use App\Jobs\ReportUsageToStripe;
 use App\Models\Tenant;
 use App\Models\UsageRecord;
 
@@ -19,6 +20,8 @@ class UsageTracker
             'quantity' => $quantity,
             'recorded_at' => now(),
         ]);
+
+        ReportUsageToStripe::dispatch($tenant);
     }
 
     /**

@@ -20,17 +20,17 @@ interface Module {
 
 const props = defineProps<{
     modules: Module[];
-    minimumSeats: number;
     billingIntervals: string[];
-    seatMonthlyCents: number;
-    seatAnnualCents: number;
+    minSeats: number;
+    seatOverageMonthlyCents: number;
+    seatOverageAnnualCents: number;
+    usageIncludedQuota: number;
+    usageOverageCents: number;
 }>();
 
 const form = useForm({
     email: '',
     module_slugs: [] as string[],
-    seat_limit: props.minimumSeats,
-    usage_quota: 1000,
     billing_interval: 'monthly',
 });
 
@@ -68,15 +68,11 @@ const modulesTotal = computed(() => {
         .reduce((sum, m) => sum + modulePrice(m), 0);
 });
 
-const extraSeats = computed(() => Math.max(0, form.seat_limit - props.minimumSeats));
-
-const seatPriceCents = computed(() =>
-    isAnnual.value ? props.seatAnnualCents : props.seatMonthlyCents,
+const seatOverageCents = computed(() =>
+    isAnnual.value
+        ? props.seatOverageAnnualCents
+        : props.seatOverageMonthlyCents,
 );
-
-const seatsTotal = computed(() => extraSeats.value * seatPriceCents.value);
-
-const total = computed(() => modulesTotal.value + seatsTotal.value);
 
 const billingLabel = computed(() => (isAnnual.value ? '/year' : '/month'));
 
@@ -182,30 +178,33 @@ function submit() {
                     </div>
 
                     <div class="grid gap-6 sm:grid-cols-2">
-                        <div class="grid gap-2">
-                            <Label for="seat_limit"
-                                >Seats ({{ minimumSeats }} included free)</Label
-                            >
-                            <Input
-                                id="seat_limit"
-                                type="number"
-                                v-model.number="form.seat_limit"
-                                :min="minimumSeats"
-                                step="1"
-                            />
-                            <InputError :message="form.errors.seat_limit" />
+                        <div
+                            class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground"
+                        >
+                            <p class="font-medium text-foreground">Seats</p>
+                            <p class="mt-1">
+                                {{ minSeats }} seat(s) included free.
+                                Additional seats billed at
+                                {{
+                                    formatPrice(seatOverageCents)
+                                }}{{ billingLabel }} per seat, based on your
+                                peak usage.
+                            </p>
                         </div>
 
-                        <div class="grid gap-2">
-                            <Label for="usage_quota">Usage Quota (units)</Label>
-                            <Input
-                                id="usage_quota"
-                                type="number"
-                                v-model.number="form.usage_quota"
-                                :min="1"
-                                step="100"
-                            />
-                            <InputError :message="form.errors.usage_quota" />
+                        <div
+                            class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground"
+                        >
+                            <p class="font-medium text-foreground">
+                                Usage Quota
+                            </p>
+                            <p class="mt-1">
+                                Up to
+                                {{ usageIncludedQuota.toLocaleString() }} API
+                                calls/month included free. Additional usage
+                                billed at
+                                {{ formatPrice(usageOverageCents) }} per call.
+                            </p>
                         </div>
                     </div>
 
@@ -250,42 +249,27 @@ function submit() {
                             </div>
                         </div>
 
-                        <div class="mt-4 border-t pt-4">
-                            <div class="flex items-baseline justify-between">
-                                <span class="text-sm text-muted-foreground">
-                                    {{ minimumSeats }} seat(s) included
-                                </span>
+                        <div class="mt-4 space-y-1 border-t pt-4 text-sm">
+                            <div class="text-muted-foreground">
+                                {{ minSeats }} seat(s) included free
                             </div>
-                            <div
-                                v-if="extraSeats > 0"
-                                class="flex justify-between text-sm"
-                            >
-                                <span
-                                    >{{ extraSeats }} extra seat(s) &times;
-                                    {{
-                                        formatPrice(seatPriceCents)
-                                    }}</span
-                                >
-                                <span>{{
-                                    formatPrice(seatsTotal)
-                                }}</span>
+                            <div class="text-muted-foreground">
+                                {{
+                                    usageIncludedQuota.toLocaleString()
+                                }}
+                                usage units included free
                             </div>
-                            <div class="flex items-baseline justify-between">
-                                <span class="text-sm text-muted-foreground"
-                                    >{{
-                                        form.usage_quota.toLocaleString()
-                                    }}
-                                    usage units</span
-                                >
+                            <div class="text-xs text-muted-foreground/75">
+                                Overages billed based on actual usage
                             </div>
                         </div>
 
                         <div class="mt-4 border-t pt-4">
                             <div class="flex items-baseline justify-between">
-                                <span class="font-semibold">Total</span>
+                                <span class="font-semibold">Modules</span>
                                 <div class="text-right">
                                     <span class="text-2xl font-bold">{{
-                                        formatPrice(total)
+                                        formatPrice(modulesTotal)
                                     }}</span>
                                     <span
                                         class="text-sm text-muted-foreground"

@@ -4,12 +4,17 @@ namespace App\Listeners;
 
 use App\Enums\SubscriptionStatus;
 use App\Models\TenantSubscription;
+use App\Services\StripeUsageReporter;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Laravel\Cashier\Events\WebhookReceived;
 
 class HandleStripeSubscriptionUpdated implements ShouldQueue
 {
+    public function __construct(
+        private StripeUsageReporter $usageReporter,
+    ) {}
+
     /**
      * Handle the event.
      */
@@ -31,6 +36,8 @@ class HandleStripeSubscriptionUpdated implements ShouldQueue
         if (! $tenantSubscription) {
             return;
         }
+
+        $previousPeriodEnd = $tenantSubscription->current_period_end;
 
         $statusMap = [
             'active' => SubscriptionStatus::Active,
@@ -58,5 +65,13 @@ class HandleStripeSubscriptionUpdated implements ShouldQueue
         }
 
         $tenantSubscription->save();
+
+        $newPeriodEnd = $tenantSubscription->current_period_end;
+        $periodRolledOver = $newPeriodEnd
+            && (! $previousPeriodEnd || ! $newPeriodEnd->equalTo($previousPeriodEnd));
+
+        if ($periodRolledOver && $tenantSubscription->isActive()) {
+            $this->usageReporter->reportSeats($tenantSubscription->tenant);
+        }
     }
 }

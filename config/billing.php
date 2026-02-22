@@ -66,4 +66,16 @@ return [
 
     'usage_overage_cents' => (int) env('BILLING_USAGE_OVERAGE_CENTS', 10),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Included Usage Quota
+    |--------------------------------------------------------------------------
+    |
+    | The number of usage units included free in each billing period (first
+    | tier of the graduated tiered price).
+    |
+    */
+
+    'usage_included_quota' => (int) env('BILLING_USAGE_INCLUDED_QUOTA', 1000),
+
 ];

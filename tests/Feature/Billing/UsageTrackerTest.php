@@ -1,14 +1,18 @@
 <?php
 
 use App\Enums\UsageType;
+use App\Jobs\ReportUsageToStripe;
 use App\Models\Tenant;
 use App\Models\TenantSubscription;
 use App\Models\UsageRecord;
 use App\Services\UsageTracker;
+use Illuminate\Support\Facades\Queue;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 test('recording usage creates a usage record', function () {
+    Queue::fake();
+
     $tenant = Tenant::factory()->create();
     $tracker = new UsageTracker;
 
@@ -17,6 +21,19 @@ test('recording usage creates a usage record', function () {
     expect($tenant->usageRecords()->count())->toBe(1);
     expect($tenant->usageRecords()->first()->quantity)->toBe(3);
     expect($tenant->usageRecords()->first()->type)->toBe(UsageType::ApiCall);
+});
+
+test('recording usage dispatches ReportUsageToStripe job', function () {
+    Queue::fake();
+
+    $tenant = Tenant::factory()->create();
+    $tracker = new UsageTracker;
+
+    $tracker->record($tenant, UsageType::ApiCall);
+
+    Queue::assertPushed(ReportUsageToStripe::class, function ($job) use ($tenant) {
+        return $job->tenant->id === $tenant->id;
+    });
 });
 
 test('currentPeriodUsage sums usage within billing period', function () {

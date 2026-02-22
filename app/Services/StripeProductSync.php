@@ -51,7 +51,7 @@ class StripeProductSync
     }
 
     /**
-     * Sync the seat overage Stripe product and prices.
+     * Sync the seat overage Stripe product with graduated tiered metered prices.
      */
     public function syncSeatProduct(): void
     {
@@ -65,21 +65,25 @@ class StripeProductSync
             $stripe,
             'nexora_seat',
             'Additional Seat',
-            'Per-seat overage charge for additional team members.',
+            'Per-seat graduated tiered charge for team members.',
         );
 
-        $monthlyPriceId = $this->syncPrice(
+        $freeUpTo = (int) config('billing.min_seats');
+
+        $monthlyPriceId = $this->syncTieredMeteredPrice(
             $stripe,
             $product->id,
             AppSetting::get('billing.seat_monthly_price_id'),
+            $freeUpTo,
             config('billing.seat_monthly_cents'),
             'month',
         );
 
-        $annualPriceId = $this->syncPrice(
+        $annualPriceId = $this->syncTieredMeteredPrice(
             $stripe,
             $product->id,
             AppSetting::get('billing.seat_annual_price_id'),
+            $freeUpTo,
             config('billing.seat_annual_cents'),
             'year',
         );
@@ -89,15 +93,11 @@ class StripeProductSync
     }
 
     /**
-     * Sync the usage overage Stripe product and metered price.
+     * Sync the usage overage Stripe product with graduated tiered metered price.
      */
     public function syncUsageProduct(): void
     {
         if (! config('cashier.secret')) {
-            return;
-        }
-
-        if (AppSetting::get('billing.usage_metered_price_id')) {
             return;
         }
 
@@ -112,18 +112,19 @@ class StripeProductSync
 
         $meter = $this->findOrCreateMeter($stripe);
 
-        $price = $stripe->prices->create([
-            'product' => $product->id,
-            'unit_amount' => config('billing.usage_overage_cents'),
-            'currency' => config('cashier.currency'),
-            'recurring' => [
-                'interval' => 'month',
-                'usage_type' => 'metered',
-                'meter' => $meter->id,
-            ],
-        ]);
+        $freeUpTo = (int) config('billing.usage_included_quota');
 
-        AppSetting::set('billing.usage_metered_price_id', $price->id);
+        $priceId = $this->syncTieredMeteredPrice(
+            $stripe,
+            $product->id,
+            AppSetting::get('billing.usage_metered_price_id'),
+            $freeUpTo,
+            config('billing.usage_overage_cents'),
+            'month',
+            $meter->id,
+        );
+
+        AppSetting::set('billing.usage_metered_price_id', $priceId);
         AppSetting::set('billing.usage_meter_id', $meter->id);
     }
 
@@ -221,5 +222,84 @@ class StripeProductSync
         ]);
 
         return $price->id;
+    }
+
+    /**
+     * Sync a graduated tiered metered price, archiving the old one if the tiers changed.
+     */
+    private function syncTieredMeteredPrice(
+        StripeClient $stripe,
+        string $productId,
+        ?string $existingPriceId,
+        int $freeUpTo,
+        int $overageAmountCents,
+        string $interval,
+        ?string $meterId = null,
+    ): string {
+        if ($existingPriceId) {
+            try {
+                $existingPrice = $stripe->prices->retrieve($existingPriceId, ['expand' => ['tiers']]);
+
+                if ($this->tieredPriceMatches($existingPrice, $freeUpTo, $overageAmountCents)) {
+                    return $existingPriceId;
+                }
+
+                $stripe->prices->update($existingPriceId, ['active' => false]);
+            } catch (InvalidRequestException) {
+                // Price no longer exists in Stripe — create a fresh one.
+            }
+        }
+
+        $recurring = [
+            'interval' => $interval,
+            'usage_type' => 'metered',
+        ];
+
+        if ($meterId) {
+            $recurring['meter'] = $meterId;
+        }
+
+        $price = $stripe->prices->create([
+            'product' => $productId,
+            'currency' => config('cashier.currency'),
+            'billing_scheme' => 'tiered',
+            'tiers_mode' => 'graduated',
+            'tiers' => [
+                [
+                    'up_to' => $freeUpTo,
+                    'unit_amount' => 0,
+                ],
+                [
+                    'up_to' => 'inf',
+                    'unit_amount' => $overageAmountCents,
+                ],
+            ],
+            'recurring' => $recurring,
+        ]);
+
+        return $price->id;
+    }
+
+    /**
+     * Check if an existing tiered price matches the expected tier configuration.
+     */
+    private function tieredPriceMatches(
+        \Stripe\Price $price,
+        int $freeUpTo,
+        int $overageAmountCents,
+    ): bool {
+        if ($price->billing_scheme !== 'tiered' || $price->tiers_mode !== 'graduated') {
+            return false;
+        }
+
+        $tiers = $price->tiers ?? [];
+
+        if (count($tiers) !== 2) {
+            return false;
+        }
+
+        return $tiers[0]->up_to === $freeUpTo
+            && $tiers[0]->unit_amount === 0
+            && $tiers[1]->unit_amount === $overageAmountCents;
     }
 }
