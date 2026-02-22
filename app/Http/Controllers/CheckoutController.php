@@ -24,6 +24,8 @@ class CheckoutController extends Controller
                 ->get(),
             'minimumSeats' => config('billing.min_seats'),
             'billingIntervals' => array_column(BillingInterval::cases(), 'value'),
+            'seatMonthlyCents' => config('billing.seat_monthly_cents'),
+            'seatAnnualCents' => config('billing.seat_annual_cents'),
         ]);
     }
 
