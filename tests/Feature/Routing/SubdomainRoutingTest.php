@@ -256,14 +256,14 @@ test('login on subdomain redirects to subdomain dashboard', function () {
     $response->assertRedirect('/dashboard');
 });
 
-test('logout redirects to root domain login', function () {
+test('logout redirects to root domain landing page', function () {
     $tenant = Tenant::factory()->create(['slug' => 'acme']);
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)->post(tenantUrl('acme', '/logout'));
 
     $this->assertGuest();
-    $response->assertRedirect(appUrl('/login'));
+    $response->assertRedirect(appUrl(''));
 });
 
 /*
