@@ -5,18 +5,18 @@ namespace App\Http\Controllers;
 use App\Http\Requests\OnboardingRequest;
 use App\Models\User;
 use App\Support\Tenancy;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class OnboardingController extends Controller
 {
     /**
      * Display the onboarding setup page.
      */
-    public function show(User $user): Response
+    public function show(User $user): InertiaResponse
     {
         return Inertia::render('onboarding/Setup', [
             'email' => $user->email,
@@ -27,7 +27,7 @@ class OnboardingController extends Controller
     /**
      * Complete the onboarding process.
      */
-    public function store(OnboardingRequest $request, User $user): RedirectResponse
+    public function store(OnboardingRequest $request, User $user): Response
     {
         $validated = $request->validated();
 
@@ -51,7 +51,7 @@ class OnboardingController extends Controller
         Auth::login($user);
 
         if ($tenant) {
-            return redirect(Tenancy::tenantUrl($tenant, '/dashboard'));
+            return Inertia::location(Tenancy::tenantUrl($tenant, '/dashboard'));
         }
 
         return redirect('/');

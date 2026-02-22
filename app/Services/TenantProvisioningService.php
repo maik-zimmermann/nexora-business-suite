@@ -28,21 +28,17 @@ class TenantProvisioningService
             return;
         }
 
-        $checkoutSession = CheckoutSession::where('session_id', $sessionId)->first();
+        DB::transaction(function () use ($sessionId, $payload) {
+            $checkoutSession = CheckoutSession::where('session_id', $sessionId)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $checkoutSession) {
-            return;
-        }
+            if (! $checkoutSession) {
+                return;
+            }
 
-        // Prevent duplicate provisioning
-        if (User::where('email', $checkoutSession->email)->exists()) {
-            $checkoutSession->delete();
-
-            return;
-        }
-
-        DB::transaction(function () use ($checkoutSession, $payload) {
             $stripeSubscription = $payload['data']['object']['subscription'] ?? null;
+            $stripeCustomerId = $payload['data']['object']['customer'] ?? null;
 
             $user = User::create([
                 'name' => Str::before($checkoutSession->email, '@'),
@@ -60,7 +56,10 @@ class TenantProvisioningService
                 'is_active' => false,
             ]);
 
-            if (config('cashier.secret')) {
+            if ($stripeCustomerId) {
+                $tenant->stripe_id = $stripeCustomerId;
+                $tenant->save();
+            } elseif (config('cashier.secret')) {
                 $tenant->createOrGetStripeCustomer([
                     'email' => $checkoutSession->email,
                 ]);

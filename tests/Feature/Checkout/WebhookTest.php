@@ -65,14 +65,32 @@ test('checkout completed webhook provisions user, tenant, membership, and subscr
     Event::assertDispatched(TenantProvisioned::class);
 });
 
-test('checkout completed webhook is idempotent for duplicate emails', function () {
+test('checkout completed webhook is idempotent when session has already been processed', function () {
     Event::fake([TenantProvisioned::class]);
 
-    User::factory()->create(['email' => 'existing@example.com']);
+    // No CheckoutSession exists — simulates a duplicate webhook delivery after the first succeeded
+    $payload = [
+        'type' => 'checkout.session.completed',
+        'data' => [
+            'object' => [
+                'id' => 'cs_test_already_processed',
+                'subscription' => null,
+            ],
+        ],
+    ];
+
+    $listener = app(HandleStripeCheckoutCompleted::class);
+    $listener->handle(new WebhookReceived($payload));
+
+    Event::assertNotDispatched(TenantProvisioned::class);
+});
+
+test('checkout completed webhook stores stripe customer id from payload on tenant', function () {
+    Event::fake([TenantProvisioned::class]);
 
     CheckoutSession::create([
-        'session_id' => 'cs_test_dup',
-        'email' => 'existing@example.com',
+        'session_id' => 'cs_test_customer',
+        'email' => 'customer@example.com',
         'module_slugs' => ['crm'],
         'seat_limit' => 5,
         'usage_quota' => 1000,
@@ -84,8 +102,9 @@ test('checkout completed webhook is idempotent for duplicate emails', function (
         'type' => 'checkout.session.completed',
         'data' => [
             'object' => [
-                'id' => 'cs_test_dup',
+                'id' => 'cs_test_customer',
                 'subscription' => null,
+                'customer' => 'cus_stripe_from_checkout',
             ],
         ],
     ];
@@ -93,10 +112,10 @@ test('checkout completed webhook is idempotent for duplicate emails', function (
     $listener = app(HandleStripeCheckoutCompleted::class);
     $listener->handle(new WebhookReceived($payload));
 
-    expect(User::where('email', 'existing@example.com')->count())->toBe(1);
-    expect(CheckoutSession::where('session_id', 'cs_test_dup')->exists())->toBeFalse();
+    $user = User::where('email', 'customer@example.com')->firstOrFail();
+    $tenant = $user->tenantMemberships()->with('tenant')->first()->tenant;
 
-    Event::assertNotDispatched(TenantProvisioned::class);
+    expect($tenant->stripe_id)->toBe('cus_stripe_from_checkout');
 });
 
 test('subscription updated webhook syncs status', function () {
