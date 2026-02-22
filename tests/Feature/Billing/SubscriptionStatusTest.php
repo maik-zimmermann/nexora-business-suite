@@ -25,7 +25,7 @@ test('active subscription passes middleware', function () {
 
     app(Tenancy::class)->set($tenant);
 
-    $response = $this->get('http://active-co.localhost/test-subscription');
+    $response = $this->get(tenantUrl('active-co', '/test-subscription'));
 
     $response->assertOk();
     expect($response->getContent())->toBe('ok');
@@ -37,7 +37,7 @@ test('locked subscription returns 403', function () {
         'tenant_id' => $tenant->id,
     ]);
 
-    $response = $this->get('http://locked-co.localhost/test-subscription');
+    $response = $this->get(tenantUrl('locked-co', '/test-subscription'));
 
     $response->assertStatus(403);
 });
@@ -48,7 +48,7 @@ test('read-only subscription passes with flag', function () {
         'tenant_id' => $tenant->id,
     ]);
 
-    $response = $this->get('http://readonly-co.localhost/test-subscription');
+    $response = $this->get(tenantUrl('readonly-co', '/test-subscription'));
 
     $response->assertOk();
 });

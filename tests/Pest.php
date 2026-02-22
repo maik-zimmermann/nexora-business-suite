@@ -41,7 +41,23 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Build a URL on the given tenant's subdomain using the configured APP_URL.
+ */
+function tenantUrl(string $slug, string $path = '/'): string
 {
-    // ..
+    $parsed = parse_url(config('app.url'));
+    $scheme = $parsed['scheme'] ?? 'http';
+    $host = $parsed['host'] ?? 'localhost';
+    $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+
+    return "{$scheme}://{$slug}.{$host}{$port}{$path}";
+}
+
+/**
+ * Build a URL on the base APP_URL (no subdomain).
+ */
+function appUrl(string $path = '/'): string
+{
+    return rtrim(config('app.url'), '/').$path;
 }
