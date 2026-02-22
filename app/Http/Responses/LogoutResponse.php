@@ -17,6 +17,6 @@ class LogoutResponse implements LogoutResponseContract
             return response()->noContent();
         }
 
-        return Inertia::location(rtrim(config('app.url'), '/').'/login');
+        return Inertia::location(rtrim(config('app.url'), '/'));
     }
 }
