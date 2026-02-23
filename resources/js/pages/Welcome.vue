@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { login } from '@/routes';
-import { index as checkoutIndex } from '@/routes/checkout';
-import { ref } from 'vue';
 import {
     Layers,
     Users,
@@ -24,6 +21,9 @@ import {
     X,
     ArrowRight,
 } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { login } from '@/routes';
+import { index as checkoutIndex } from '@/routes/checkout';
 
 interface Module {
     id: number;
