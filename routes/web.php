@@ -11,7 +11,12 @@ use Inertia\Inertia;
 */
 Route::middleware('root.domain')->group(function () {
     Route::get('/', function () {
-        return Inertia::render('Welcome');
+        return Inertia::render('Welcome', [
+            'modules' => \App\Models\Module::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'slug', 'description', 'monthly_price_cents']),
+        ]);
     })->middleware('tenant.redirect')->name('home');
 
     Route::get('tenants', [TenantPickerController::class, 'show'])
