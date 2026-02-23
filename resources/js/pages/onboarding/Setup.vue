@@ -45,7 +45,9 @@ const baseDomain = computed(() => {
 });
 
 const subdomainPreview = computed(() => {
-    return form.slug ? `${form.slug}.${baseDomain.value}` : `your-org.${baseDomain.value}`;
+    return form.slug
+        ? `${form.slug}.${baseDomain.value}`
+        : `your-org.${baseDomain.value}`;
 });
 
 function submit() {

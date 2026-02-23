@@ -183,10 +183,9 @@ function submit() {
                         >
                             <p class="font-medium text-foreground">Seats</p>
                             <p class="mt-1">
-                                {{ minSeats }} seat(s) included free.
-                                Additional seats billed at
-                                {{
-                                    formatPrice(seatOverageCents)
+                                {{ minSeats }} seat(s) included free. Additional
+                                seats billed at
+                                {{ formatPrice(seatOverageCents)
                                 }}{{ billingLabel }} per seat, based on your
                                 peak usage.
                             </p>
@@ -254,9 +253,7 @@ function submit() {
                                 {{ minSeats }} seat(s) included free
                             </div>
                             <div class="text-muted-foreground">
-                                {{
-                                    usageIncludedQuota.toLocaleString()
-                                }}
+                                {{ usageIncludedQuota.toLocaleString() }}
                                 usage units included free
                             </div>
                             <div class="text-xs text-muted-foreground/75">
